@@ -1,3 +1,0 @@
-wget https://huggingface.co/datasets/Anthropic/values-in-the-wild/resolve/main/values_frequencies.csv?download=true
-
-wget https://huggingface.co/datasets/Anthropic/values-in-the-wild/resolve/main/values_tree.csv?download=true

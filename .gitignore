@@ -47,6 +47,18 @@ coverage.xml
 *.sublime-project
 *.sublime-workspace
 
+# Editor backup files
+*~
+.*~
+*.bak
+*.swp
+.DS_Store
+
+# Temporary files
+*?download=true
+*.tmp
+tmp/
+
 # Project specific
 .cache/
 data/samples/
