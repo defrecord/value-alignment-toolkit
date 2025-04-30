@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> Note: While this file is machine-generated, it should NOT be marked as "generated" in .gitattributes. It serves as a crucial interface between humans and AI assistants, and merging conflicts should be resolved manually to ensure accurate guidance.
+
 ## Build/Test/Lint Commands
 - **Python**: `pytest src/tests/` or `pytest src/tests/test_file.py::test_function` for single tests
 - **Data Processing**: `python -m src.scripts.process_data --input data/values/raw --output data/values/processed`
