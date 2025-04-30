@@ -5,10 +5,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > Note: While this file is machine-generated, it should NOT be marked as "generated" in .gitattributes. It serves as a crucial interface between humans and AI assistants, and merging conflicts should be resolved manually to ensure accurate guidance.
 
 ## Build/Test/Lint Commands
-- **Python**: `pytest src/tests/` or `pytest src/tests/test_file.py::test_function` for single tests
-- **Data Processing**: `python -m src.scripts.process_data --input data/values/raw --output data/values/processed`
-- **Linting**: `black src/` for formatting, `flake8 src/` for style checks, `mypy src/` for type checking
-- **Documentation**: `sphinx-build -b html docs/source docs/build` to build documentation
+- **Environment**: Use `make setup` to create a virtual environment with uv, then `make activate` for instructions
+- **Python**: Use `make test` to run all tests or `uv run python -m pytest tests/test_file.py::test_function` for single tests
+- **Linting**: Use `make lint` to run flake8 and mypy, or `make format` to run Black
+- **Documentation**: Use `make docs` to generate API documentation
+- **Sample Analysis**: Use `make sample-analysis` for a quick demo of the toolkit's capabilities
+- **Simulation**: Use `make simulate` to run a value-based chat simulation
 
 ## Code Style Guidelines
 - **Python**: Follow PEP 8 conventions with Black formatting (line length: 88)
