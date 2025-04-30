@@ -1,0 +1,34 @@
+# Set default behavior to automatically normalize line endings
+* text=auto
+
+# Source code
+*.py text diff=python
+*.ipynb text
+*.sh text eol=lf
+*.json text
+*.yml text
+*.yaml text
+*.toml text
+*.md text diff=markdown
+*.org text
+
+# Data files
+*.csv text
+*.tsv text
+*.jsonl text
+
+# Documents
+*.pdf binary
+*.doc binary
+*.docx binary
+*.xlsx binary
+
+# Denote binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.gz binary
+*.zip binary
+*.pkl binary
