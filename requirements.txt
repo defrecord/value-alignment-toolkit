@@ -1,0 +1,30 @@
+# Core dependencies
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.2.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# NLP & Data Processing
+transformers>=4.30.0
+sentence-transformers>=2.2.2
+spacy>=3.5.0
+hy>=0.25.0
+guile>=3.0.0
+
+# Privacy & Anonymization
+cryptography>=41.0.0
+hashlib>=20080903
+
+# Simulation
+networkx>=3.0
+tqdm>=4.65.0
+
+# Testing
+pytest>=7.3.1
+hypothesis>=6.70.0
+
+# Development
+black>=23.3.0
+flake8>=6.0.0
+mypy>=1.3.0

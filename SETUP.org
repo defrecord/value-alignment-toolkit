@@ -1,0 +1,2266 @@
+#+TITLE: Value Alignment Toolkit Setup
+#+AUTHOR: Aidan Pace <apace@defrecord.com>
+#+EMAIL: apace@defrecord.com
+#+DATE: [2025-04-30 Wed]
+#+PROPERTY: header-args:python :session *py* :results output
+#+PROPERTY: header-args:scheme :session *guile* :results output
+#+PROPERTY: header-args:hy :session *hy* :results output
+#+PROPERTY: header-args:bash :results output :exports both
+#+STARTUP: overview
+#+OPTIONS: toc:3 num:t
+#+SETUPFILE: https://fniessen.github.io/org-html-themes/org/theme-readtheorg.setup
+
+* Value Alignment Toolkit Setup
+
+This document contains the complete setup for the value-alignment-toolkit repository. It uses org-mode's literate programming capabilities to define the project structure, dependencies, and build processes. All code blocks can be tangled to their respective files using the ~org-babel-tangle~ command.
+
+** Project Structure
+
+First, let's create the basic project directory structure:
+
+#+BEGIN_SRC bash :tangle yes :mkdirp yes :dir .
+mkdir -p src/{extraction,simulation,anonymization,analysis,taxonomy}
+mkdir -p data/{values,samples}
+mkdir -p tools/{download,validation}
+mkdir -p docs/{tutorials,paper}
+mkdir -p tests
+mkdir -p scripts
+#+END_SRC
+
+** Development Environment Setup
+
+*** Virtual Environment
+
+Create a Python virtual environment for the project:
+
+#+BEGIN_SRC bash :tangle scripts/setup_venv.sh :shebang "#!/bin/bash" :mkdirp yes
+# Create and activate virtual environment
+python -m venv venv
+
+# Display activation instructions
+echo "Virtual environment created. Activate with:"
+echo "  source venv/bin/activate  # On Unix/macOS"
+echo "  venv\\Scripts\\activate   # On Windows"
+#+END_SRC
+
+*** Dependencies
+
+Define project dependencies in requirements.txt:
+
+#+BEGIN_SRC text :tangle requirements.txt
+# Core dependencies
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.2.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# NLP & Data Processing
+transformers>=4.30.0
+sentence-transformers>=2.2.2
+spacy>=3.5.0
+hy>=0.25.0
+guile>=3.0.0
+
+# Privacy & Anonymization
+cryptography>=41.0.0
+hashlib>=20080903
+
+# Simulation
+networkx>=3.0
+tqdm>=4.65.0
+
+# Testing
+pytest>=7.3.1
+hypothesis>=6.70.0
+
+# Development
+black>=23.3.0
+flake8>=6.0.0
+mypy>=1.3.0
+#+END_SRC
+
+** Dependency Installation Script
+
+#+BEGIN_SRC bash :tangle scripts/install_deps.sh :shebang "#!/bin/bash" :mkdirp yes
+# Check if virtual environment is activated
+if [ -z "$VIRTUAL_ENV" ]; then
+    echo "Please activate the virtual environment first"
+    echo "  source venv/bin/activate  # On Unix/macOS"
+    echo "  venv\\Scripts\\activate   # On Windows"
+    exit 1
+fi
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Install additional system dependencies if needed
+if command -v apt-get &> /dev/null; then
+    echo "Detected Debian/Ubuntu - installing system dependencies"
+    sudo apt-get update
+    sudo apt-get install -y guile-3.0 guile-3.0-dev
+elif command -v brew &> /dev/null; then
+    echo "Detected macOS with Homebrew - installing system dependencies"
+    brew install guile
+elif command -v pacman &> /dev/null; then
+    echo "Detected Arch Linux - installing system dependencies"
+    sudo pacman -S guile
+else
+    echo "Please install Guile 3.0 manually for your system"
+fi
+
+# Setup spaCy models
+python -m spacy download en_core_web_md
+
+echo "Dependencies installed successfully"
+#+END_SRC
+
+** Core Module Structures
+
+*** Extraction Module
+
+#+BEGIN_SRC python :tangle src/extraction/__init__.py
+"""
+Value extraction module for identifying and cataloging values expressed in conversations.
+"""
+#+END_SRC
+
+#+BEGIN_SRC python :tangle src/extraction/extractor.py
+"""
+Core value extraction implementation based on the Values in the Wild paper methodology.
+"""
+import re
+import json
+from typing import Dict, List, Tuple, Optional, Any
+from pathlib import Path
+
+class ValueExtractor:
+    """
+    Extracts values from conversation text using both rule-based and embedding-based approaches.
+    
+    Implements methodologies from the Values in the Wild paper for identifying value
+    expressions in AI assistant conversations.
+    """
+    
+    def __init__(self, values_taxonomy_path: str = None, model_name: str = "all-mpnet-base-v2"):
+        """
+        Initialize the value extractor with a taxonomy and embedding model.
+        
+        Args:
+            values_taxonomy_path: Path to the values taxonomy JSON file
+            model_name: Name of the sentence transformer model to use
+        """
+        self.values_taxonomy = self._load_taxonomy(values_taxonomy_path)
+        self.model = None  # Lazy-load embedding model
+        self.model_name = model_name
+    
+    def _load_taxonomy(self, taxonomy_path: Optional[str]) -> Dict:
+        """Load the values taxonomy from a JSON file or use the default taxonomy."""
+        if taxonomy_path and Path(taxonomy_path).exists():
+            with open(taxonomy_path, 'r') as f:
+                return json.load(f)
+        else:
+            # Default to empty taxonomy that will be populated during extraction
+            return {
+                "practical_values": {},
+                "epistemic_values": {},
+                "social_values": {},
+                "protective_values": {},
+                "personal_values": {}
+            }
+    
+    def _load_model(self):
+        """Lazy-load the sentence transformer model."""
+        if self.model is None:
+            try:
+                from sentence_transformers import SentenceTransformer
+                self.model = SentenceTransformer(self.model_name)
+            except ImportError:
+                raise ImportError(
+                    "sentence-transformers is required for embedding-based extraction. "
+                    "Install with 'pip install sentence-transformers'."
+                )
+    
+    def extract_from_text(self, text: str) -> List[Dict[str, Any]]:
+        """
+        Extract values from a text string.
+        
+        Args:
+            text: Text content to analyze
+            
+        Returns:
+            List of extracted values with metadata
+        """
+        # Implementation will be expanded based on the paper's methodology
+        # This is a placeholder for the actual extraction logic
+        extracted_values = []
+        
+        # Example extraction logic - to be replaced with actual implementation
+        if "helpfulness" in text.lower():
+            extracted_values.append({"value": "helpfulness", "category": "practical_values"})
+        
+        if "transparency" in text.lower():
+            extracted_values.append({"value": "transparency", "category": "epistemic_values"})
+        
+        return extracted_values
+    
+    def extract_from_conversation(self, messages: List[Dict[str, str]]) -> List[Dict[str, Any]]:
+        """
+        Extract values from a conversation transcript.
+        
+        Args:
+            messages: List of message dictionaries with 'role' and 'content' keys
+            
+        Returns:
+            List of extracted values with metadata including message index
+        """
+        all_values = []
+        
+        for i, message in enumerate(messages):
+            if message.get('role') == 'assistant':
+                values = self.extract_from_text(message.get('content', ''))
+                for value in values:
+                    value['message_index'] = i
+                all_values.extend(values)
+        
+        return all_values
+
+
+# Example usage
+if __name__ == "__main__":
+    extractor = ValueExtractor()
+    sample_text = "I'm here to help you understand this concept with clarity and transparency."
+    values = extractor.extract_from_text(sample_text)
+    print(f"Extracted values: {values}")
+#+END_SRC
+
+*** Simulation Module
+
+#+BEGIN_SRC python :tangle src/simulation/__init__.py
+"""
+Chat simulation module for creating synthetic conversation data with value expressions.
+"""
+#+END_SRC
+
+#+BEGIN_SRC hy :tangle src/simulation/weighted_sampler.hy
+"""
+Weighted value sampling implementation based on the Values in the Wild paper.
+Implements the value floor generator for sampling values according to empirical distributions.
+"""
+
+(import [collections [defaultdict]]
+        [random [random choice randint]]
+        [math [log]]
+        [typing [Dict List Tuple Any Optional]])
+
+(defn calculate-value-floors [values-with-weights]
+  "Calculate floors (cumulative thresholds) for weighted value sampling.
+  
+  Args:
+      values-with-weights: Dictionary mapping value names to their weights
+      
+  Returns:
+      List of tuples (value, lower_bound, upper_bound)
+  "
+  (setv floors [])
+  (setv cumulative 0.0)
+  
+  (for [[value weight] (.items values-with-weights)]
+    (setv lower-bound cumulative)
+    (setv cumulative (+ cumulative weight))
+    (.append floors (, value lower-bound cumulative)))
+  
+  floors)
+
+(defclass WeightedValueSampler []
+  "Samples values based on their empirical frequency distribution.
+  Implements the sampling methodology from the Values in the Wild paper."
+  
+  (defn __init__ [self &optional [values-with-weights None] [values-floor-path None]]
+    "Initialize the sampler with value weights or load from file.
+    
+    Args:
+        values-with-weights: Dictionary mapping value names to weights
+        values-floor-path: Path to CSV file with precalculated value floors
+    "
+    (setv self.values-with-weights (or values-with-weights (self.get-default-weights)))
+    (setv self.floors (if values-floor-path
+                         (self.load-floors-from-file values-floor-path)
+                         (calculate-value-floors self.values-with-weights)))
+    (setv self.total-weight (get (. (get self.floors -1) 2) 0)))
+  
+  (defn get-default-weights [self]
+    "Get default value weights from the Values in the Wild paper."
+    {
+      "helpfulness" 23.359
+      "professionalism" 22.861
+      "transparency" 17.391
+      "clarity" 16.58
+      "thoroughness" 14.301
+      "efficiency" 6.606
+      "technical excellence" 6.127
+      "authenticity" 6.042
+      "analytical rigor" 5.478
+      "accuracy" 5.318
+      ; Additional values would be included here
+    })
+  
+  (defn load-floors-from-file [self file-path]
+    "Load precomputed value floors from a CSV file.
+    
+    Args:
+        file-path: Path to the CSV file with value floors
+        
+    Returns:
+        List of value floor tuples
+    "
+    (setv floors [])
+    (with [f (open file-path "r")]
+      ; Skip header
+      (.readline f)
+      (for [line (.readlines f)]
+        (setv [value lower upper] (.split (.strip line) ","))
+        (.append floors (, value (float lower) (float upper)))))
+    floors)
+  
+  (defn sample-value [self]
+    "Sample a single value based on the weighted distribution.
+    
+    Returns:
+        A sampled value name
+    "
+    (setv r (* (random) self.total-weight))
+    
+    (for [[value lower-bound upper-bound] self.floors]
+      (when (and (>= r lower-bound) (< r upper-bound))
+        (return value)))
+    
+    ; Default fallback if something goes wrong
+    (get (get self.floors 0) 0))
+  
+  (defn sample-values [self n]
+    "Sample n values with replacement.
+    
+    Args:
+        n: Number of values to sample
+        
+    Returns:
+        List of sampled values
+    "
+    (lfor _ (range n) (self.sample-value))))
+
+; Example usage
+(defmain [&rest args]
+  (setv sampler (WeightedValueSampler))
+  (print "Sampling 10 values based on empirical distribution:")
+  (print (sampler.sample-values 10)))
+#+END_SRC
+
+#+BEGIN_SRC python :tangle src/simulation/chat_simulator.py
+"""
+Chat simulation system that creates synthetic conversations with value expressions.
+"""
+from datetime import datetime
+import random
+from typing import Dict, List, Tuple, Any, Optional
+from collections import defaultdict
+
+class User:
+    """Represents a simulated user in the chat system."""
+    
+    def __init__(self, user_id: int, username: str, demographics: Optional[Dict[str, Any]] = None):
+        self.id = user_id
+        self.username = username
+        self.demographics = demographics or {}
+        self.creation_date = datetime.now()
+        self.chats = set()  # Chat IDs this user participates in
+        self.values = []    # Values this user expresses
+
+class Chat:
+    """Represents a simulated chat conversation."""
+    
+    def __init__(self, chat_id: int, name: str, creator_id: int):
+        self.id = chat_id
+        self.name = name
+        self.creator_id = creator_id
+        self.participants = set([creator_id])
+        self.messages = []
+        self.creation_date = datetime.now()
+    
+    def add_participant(self, user_id: int):
+        """Add a participant to the chat."""
+        self.participants.add(user_id)
+    
+    def add_message(self, message):
+        """Add a message to the chat."""
+        self.messages.append(message)
+
+class Message:
+    """Represents a message in a chat conversation."""
+    
+    def __init__(self, message_id: int, chat_id: int, sender_id: int, 
+                 content: str, timestamp: Optional[datetime] = None):
+        self.id = message_id
+        self.chat_id = chat_id
+        self.sender_id = sender_id
+        self.content = content
+        self.timestamp = timestamp or datetime.now()
+        self.extracted_values = None  # Will be populated during value extraction
+
+class ChatSimulator:
+    """
+    Simulates a chat system with multiple users, conversations, and value expressions.
+    
+    Implements the simulation methodology from the Values in the Wild paper.
+    """
+    
+    def __init__(self, value_sampler=None):
+        """
+        Initialize the chat simulator.
+        
+        Args:
+            value_sampler: Optional value sampler for generating values in messages
+        """
+        self.users = {}
+        self.chats = {}
+        self.messages = []
+        self.next_user_id = 1
+        self.next_chat_id = 1
+        self.next_message_id = 1
+        
+        # Create or use value sampler
+        if value_sampler:
+            self.value_sampler = value_sampler
+        else:
+            try:
+                # Import locally to avoid circular imports
+                from simulation.weighted_sampler import WeightedValueSampler
+                self.value_sampler = WeightedValueSampler()
+            except ImportError:
+                print("Warning: WeightedValueSampler not available. Values will not be sampled.")
+                self.value_sampler = None
+    
+    def create_users(self, count: int) -> List[User]:
+        """
+        Create a specified number of simulated users.
+        
+        Args:
+            count: Number of users to create
+            
+        Returns:
+            List of created User objects
+        """
+        locations = ["New York", "Los Angeles", "Chicago", "Dallas", "Boston", 
+                     "Miami", "Seattle", "Atlanta", "San Francisco"]
+        
+        created_users = []
+        for i in range(count):
+            user_id = self.next_user_id
+            self.next_user_id += 1
+            username = f"user{user_id}"
+            
+            # Generate demographics
+            demographics = {
+                "age": 18 + random.randint(0, 50),  # 18-68
+                "gender": random.choice(["female", "male", "non-binary"]),
+                "location": random.choice(locations)
+            }
+            
+            user = User(user_id, username, demographics)
+            self.users[user_id] = user
+            created_users.append(user)
+        
+        print(f"Created {count} users")
+        return created_users
+    
+    def create_chats(self, chat_count_per_user: int) -> Dict[int, Chat]:
+        """
+        Create chats between users.
+        
+        Args:
+            chat_count_per_user: Average number of chats per user
+            
+        Returns:
+            Dictionary of created Chat objects
+        """
+        user_ids = list(self.users.keys())
+        
+        for creator_id in user_ids:
+            # Vary chat count by ±30%
+            chat_count = max(1, int(chat_count_per_user * (0.7 + random.random() * 0.6)))
+            
+            for i in range(chat_count):
+                chat_id = self.next_chat_id
+                self.next_chat_id += 1
+                name = f"Chat {chat_id}"
+                chat = Chat(chat_id, name, creator_id)
+                
+                # Add 1-5 random participants
+                participant_count = 1 + random.randint(0, 4)
+                attempts = 0
+                
+                while len(chat.participants) < participant_count and attempts < 10:
+                    random_user_id = random.choice(user_ids)
+                    if random_user_id != creator_id:
+                        chat.add_participant(random_user_id)
+                        self.users[random_user_id].chats.add(chat_id)
+                    attempts += 1
+                
+                self.chats[chat_id] = chat
+                self.users[creator_id].chats.add(chat_id)
+        
+        print(f"Created {len(self.chats)} chats")
+        return self.chats
+    
+    def generate_messages(self, messages_per_chat: int) -> List[Message]:
+        """
+        Generate messages in each chat.
+        
+        Args:
+            messages_per_chat: Average number of messages per chat
+            
+        Returns:
+            List of generated Message objects
+        """
+        message_templates = [
+            "Hey, how are you doing?",
+            "I need help with something important.",
+            "Can you provide some clear information on this topic?",
+            "Let's be efficient about how we approach this project.",
+            "I believe being honest is the most important thing here.",
+            "We need to keep this discussion private and secure.",
+            "I think the ethical thing to do is...",
+            "As a professional, I recommend that we...",
+            "Let me be transparent about what's happening.",
+            "I appreciate your thoroughness in explaining this."
+        ]
+        
+        for chat in self.chats.values():
+            # Vary message count by ±30%
+            message_count = max(2, int(messages_per_chat * (0.7 + random.random() * 0.6)))
+            participants = list(chat.participants)
+            
+            # Create an alternating conversation
+            for i in range(message_count):
+                sender_id = participants[i % len(participants)]
+                
+                # AI assistant typically responds every other message
+                is_assistant = i % 2 == 1
+                
+                # Generate content
+                if is_assistant:
+                    # Sample 1-3 values if this is an assistant message
+                    values_count = random.randint(1, 3)
+                    sampled_values = []
+                    
+                    if self.value_sampler:
+                        sampled_values = self.value_sampler.sample_values(values_count)
+                    
+                    # Template-based content generation
+                    content = f"I'll help you with that. "
+                    
+                    # Incorporate sampled values into content
+                    if "helpfulness" in sampled_values:
+                        content += "I'm here to assist you. "
+                    if "transparency" in sampled_values:
+                        content += "Let me be transparent about the process. "
+                    if "clarity" in sampled_values:
+                        content += "I'll explain this clearly. "
+                else:
+                    # User message
+                    content = random.choice(message_templates)
+                
+                # Add some variation
+                if not is_assistant:
+                    variations = ["I think ", "In my opinion, ", "Perhaps ", "", "Actually, "]
+                    content = random.choice(variations) + content
+                
+                # Create timestamp with realistic timing
+                timestamp = datetime.now()
+                
+                # Create message
+                message = Message(
+                    self.next_message_id,
+                    chat.id,
+                    sender_id,
+                    content,
+                    timestamp
+                )
+                self.next_message_id += 1
+                
+                # Store values if this is an assistant message
+                if is_assistant and self.value_sampler:
+                    message.extracted_values = sampled_values
+                
+                self.messages.append(message)
+                chat.add_message(message)
+        
+        print(f"Generated {len(self.messages)} messages")
+        return self.messages
+    
+    def run_simulation(self, num_users=10, chats_per_user=5, messages_per_chat=10):
+        """
+        Run a complete chat simulation.
+        
+        Args:
+            num_users: Number of users to create
+            chats_per_user: Average chats per user
+            messages_per_chat: Average messages per chat
+            
+        Returns:
+            Dictionary with simulation results
+        """
+        print("Starting chat simulation...")
+        
+        # Create users
+        self.create_users(num_users)
+        
+        # Create chats
+        self.create_chats(chats_per_user)
+        
+        # Generate messages
+        self.generate_messages(messages_per_chat)
+        
+        # Return simulation summary
+        return {
+            "summary": {
+                "user_count": len(self.users),
+                "chat_count": len(self.chats),
+                "message_count": len(self.messages)
+            },
+            "data": {
+                "users": self.users,
+                "chats": self.chats,
+                "messages": self.messages
+            }
+        }
+
+# Example usage
+if __name__ == "__main__":
+    simulator = ChatSimulator()
+    results = simulator.run_simulation(num_users=5, chats_per_user=3, messages_per_chat=5)
+    print(f"Simulation complete with {results['summary']['message_count']} messages")
+#+END_SRC
+
+*** Anonymization Module
+
+#+BEGIN_SRC python :tangle src/anonymization/__init__.py
+"""
+Privacy-preserving anonymization module for value analysis data.
+"""
+#+END_SRC
+
+#+BEGIN_SRC python :tangle src/anonymization/anonymizer.py
+"""
+Anonymization tools implementing privacy techniques from the Values in the Wild paper.
+"""
+import hashlib
+import random
+from datetime import datetime, timedelta
+from typing import Dict, List, Tuple, Any, Optional
+
+class Anonymizer:
+    """
+    Provides privacy-preserving anonymization techniques for conversation data.
+    
+    Implements the anonymization methodology from the Values in the Wild paper,
+    including pseudonymization, k-anonymity, and other privacy-preserving techniques.
+    """
+    
+    def __init__(self, salt: str = None):
+        """
+        Initialize the anonymizer.
+        
+        Args:
+            salt: Optional salt for hash-based pseudonymization
+        """
+        self.salt = salt or str(random.randint(10000, 99999))
+        self.pseudonym_map = {}
+    
+    def get_pseudonym(self, identifier: str, context_id: str = None) -> str:
+        """
+        Generate a consistent pseudonym for an identifier.
+        
+        Args:
+            identifier: Original identifier (e.g., user ID)
+            context_id: Optional context for context-specific pseudonyms
+            
+        Returns:
+            Pseudonymized identifier
+        """
+        key = f"{identifier}-{context_id}" if context_id else identifier
+        
+        if key not in self.pseudonym_map:
+            # Generate a pseudonym using a hash function
+            hash_input = f"{key}-{self.salt}"
+            hash_value = hashlib.md5(hash_input.encode('utf-8')).hexdigest()
+            pseudonym = f"User{abs(int(hash_value, 16) % 1000)}"
+            self.pseudonym_map[key] = pseudonym
+        
+        return self.pseudonym_map[key]
+    
+    def anonymize_user(self, user: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create an anonymized version of a user.
+        
+        Args:
+            user: Original user data
+            
+        Returns:
+            Anonymized user data
+        """
+        return {
+            "anonymized_id": self.get_pseudonym(str(user["id"])),
+            "generalized_demographics": {
+                "age_range": self.generalize_age(user.get("demographics", {}).get("age")),
+                "region": self.generalize_location(user.get("demographics", {}).get("location")),
+            },
+            "chat_count": len(user.get("chats", [])),
+            "value_count": len(user.get("values", [])),
+        }
+    
+    def anonymize_message(self, message: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create an anonymized version of a message.
+        
+        Args:
+            message: Original message data
+            
+        Returns:
+            Anonymized message data
+        """
+        # Create context-specific pseudonym for the sender
+        sender_id = str(message["sender_id"])
+        chat_id = str(message["chat_id"])
+        
+        return {
+            "anonymized_id": f"msg-{abs(hash(str(message['id'])) % 10000)}",
+            "chat_id": f"chat-{abs(hash(str(chat_id)) % 10000)}",
+            "sender": self.get_pseudonym(sender_id, chat_id),  # Context-specific pseudonym
+            "length": len(message.get("content", "")),
+            "timestamp": self.generalize_timestamp(message.get("timestamp")),
+            "extracted_values": message.get("extracted_values", []),
+        }
+    
+    def generalize_age(self, age: Optional[int]) -> str:
+        """
+        Generalize age into age ranges.
+        
+        Args:
+            age: Original age
+            
+        Returns:
+            Age range
+        """
+        if not age:
+            return "unknown"
+        
+        if age < 18:
+            return "under-18"
+        elif age < 25:
+            return "18-24"
+        elif age < 35:
+            return "25-34"
+        elif age < 45:
+            return "35-44"
+        elif age < 55:
+            return "45-54"
+        elif age < 65:
+            return "55-64"
+        else:
+            return "65+"
+    
+    def generalize_location(self, location: Optional[str]) -> str:
+        """
+        Generalize location to region level.
+        
+        Args:
+            location: Original location
+            
+        Returns:
+            Generalized region
+        """
+        if not location:
+            return "unknown"
+        
+        # Region mapping
+        regions = {
+            "New York": "Northeast",
+            "Boston": "Northeast",
+            "Philadelphia": "Northeast",
+            "Los Angeles": "West",
+            "San Francisco": "West",
+            "Seattle": "West",
+            "Chicago": "Midwest",
+            "Detroit": "Midwest",
+            "Dallas": "South",
+            "Atlanta": "South",
+            "Miami": "South",
+        }
+        
+        return regions.get(location, "Other")
+    
+    def generalize_timestamp(self, timestamp: Optional[datetime]) -> str:
+        """
+        Generalize timestamp to day of week and time range.
+        
+        Args:
+            timestamp: Original timestamp
+            
+        Returns:
+            Generalized time description
+        """
+        if not timestamp:
+            return "unknown"
+        
+        days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        day_of_week = days[timestamp.weekday()]
+        
+        hour = timestamp.hour
+        if 5 <= hour < 12:
+            time_range = "morning"
+        elif 12 <= hour < 17:
+            time_range = "afternoon"
+        elif 17 <= hour < 22:
+            time_range = "evening"
+        else:
+            time_range = "night"
+        
+        return f"{day_of_week}, {time_range}"
+    
+    def apply_k_anonymity(self, users: List[Dict[str, Any]], k: int, attribute_getter=None):
+        """
+        Apply k-anonymity to a list of users by grouping similar attribute values.
+        
+        Args:
+            users: List of user data
+            k: Anonymity parameter
+            attribute_getter: Function to extract attribute from user data
+            
+        Returns:
+            K-anonymized user data
+        """
+        if attribute_getter is None:
+            attribute_getter = lambda u: u.get("demographics", {}).get("location")
+        
+        groups = {}
+        
+        # Group users by attribute value
+        for user in users:
+            attr_value = attribute_getter(user)
+            if attr_value not in groups:
+                groups[attr_value] = []
+            groups[attr_value].append(user)
+        
+        # Process each group
+        anonymized_users = []
+        
+        for attr_value, group in groups.items():
+            if len(group) >= k:
+                # Group is large enough - add users normally
+                anonymized_users.extend([self.anonymize_user(u) for u in group])
+            else:
+                # Group is too small - suppress or generalize
+                for user in group:
+                    anon_user = self.anonymize_user(user)
+                    
+                    # Generalize the attribute
+                    if isinstance(attr_value, str) and attr_value:
+                        # For strings, suppress most characters
+                        generic_value = f"{attr_value[0]}***"
+                        anon_user["generalized_demographics"]["region"] = "generalized"
+                    else:
+                        anon_user["generalized_demographics"]["region"] = "generalized"
+                    
+                    anonymized_users.append(anon_user)
+        
+        return anonymized_users
+    
+    def create_anonymized_dataset(self, users: Dict[str, Any], chats: Dict[str, Any], 
+                                  messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Create a complete anonymized dataset for research purposes.
+        
+        Args:
+            users: Original user data
+            chats: Original chat data
+            messages: Original message data
+            
+        Returns:
+            Anonymized research dataset
+        """
+        anonymized_users = [self.anonymize_user(u) for u in users.values()]
+        anonymized_messages = [self.anonymize_message(m) for m in messages]
+        
+        # Create value frequency analysis without identifying individuals
+        value_frequencies = {}
+        for message in anonymized_messages:
+            for value in message.get("extracted_values", []):
+                if value:
+                    value_frequencies[value] = value_frequencies.get(value, 0) + 1
+        
+        return {
+            "metadata": {
+                "user_count": len(anonymized_users),
+                "chat_count": len(chats),
+                "message_count": len(anonymized_messages),
+                "date_range": {
+                    "start": self.generalize_timestamp(datetime.now() - timedelta(days=30)),
+                    "end": self.generalize_timestamp(datetime.now()),
+                }
+            },
+            "value_frequencies": value_frequencies,
+            "anonymized_users": anonymized_users,
+            "anonymized_messages": anonymized_messages,
+        }
+
+# Example usage
+if __name__ == "__main__":
+    anonymizer = Anonymizer()
+    
+    # Example user data
+    user_data = {
+        "id": 123,
+        "username": "johndoe",
+        "demographics": {
+            "age": 34,
+            "location": "San Francisco"
+        },
+        "chats": [1, 2, 3],
+        "values": ["privacy", "honesty"]
+    }
+    
+    # Example message data
+    message_data = {
+        "id": 456,
+        "chat_id": 2,
+        "sender_id": 123,
+        "content": "I think privacy is really important.",
+        "timestamp": datetime.now(),
+        "extracted_values": ["privacy", "honesty"]
+    }
+    
+    # Anonymize examples
+    anon_user = anonymizer.anonymize_user(user_data)
+    anon_message = anonymizer.anonymize_message(message_data)
+    
+    print("Anonymized user:")
+    print(anon_user)
+    print("\nAnonymized message:")
+    print(anon_message)
+#+END_SRC
+
+*** Analysis Module
+
+#+BEGIN_SRC python :tangle src/analysis/__init__.py
+"""
+Analysis module for evaluating value expressions and distributions.
+"""
+#+END_SRC
+
+#+BEGIN_SRC python :tangle src/analysis/value_analyzer.py
+"""
+Analysis tools for value frequencies, associations, and context-dependencies.
+"""
+import numpy as np
+import pandas as pd
+from typing import Dict, List, Tuple, Any, Optional
+from collections import defaultdict
+
+class ValueAnalyzer:
+    """
+    Analyzes value expressions, distributions, and associations across contexts.
+    
+    Implements statistical analysis methods for understanding how values manifest
+    in different contexts and tasks.
+    """
+    
+    def __init__(self, values_data=None):
+        """
+        Initialize the value analyzer.
+        
+        Args:
+            values_data: Optional dictionary or DataFrame of value data
+        """
+        self.values_data = values_data
+    
+    def load_data(self, data_path: str):
+        """
+        Load value data from a file.
+        
+        Args:
+            data_path: Path to the data file (CSV or JSON)
+            
+        Returns:
+            Loaded data as DataFrame
+        """
+        if data_path.endswith('.csv'):
+            self.values_data = pd.read_csv(data_path)
+        elif data_path.endswith('.json'):
+            self.values_data = pd.read_json(data_path)
+        else:
+            raise ValueError("Unsupported file format. Use CSV or JSON.")
+        
+        return self.values_data
+    
+    def calculate_value_frequencies(self, values_list: List[str]) -> Dict[str, int]:
+        """
+        Calculate the frequency of each value in a list.
+        
+        Args:
+            values_list: List of value strings
+            
+        Returns:
+            Dictionary mapping values to their frequencies
+        """
+        frequencies = defaultdict(int)
+        for value in values_list:
+            frequencies[value] += 1
+        
+        return dict(frequencies)
+    
+    def compute_chi_square(self, 
+                           observed_df: pd.DataFrame, 
+                           row_var: str, 
+                           col_var: str) -> Tuple[float, pd.DataFrame, pd.DataFrame]:
+        """
+        Compute chi-square test for independence between two variables.
+        
+        Args:
+            observed_df: DataFrame with the data
+            row_var: Column name for the row variable
+            col_var: Column name for the column variable
+            
+        Returns:
+            Tuple of (chi-square statistic, DataFrame of adjusted residuals, p-value)
+        """
+        # Create contingency table
+        contingency = pd.crosstab(observed_df[row_var], observed_df[col_var])
+        
+        # Calculate expected frequencies
+        row_totals = contingency.sum(axis=1).values.reshape(-1, 1)
+        col_totals = contingency.sum(axis=0).values
+        total = contingency.sum().sum()
+        expected = np.outer(row_totals, col_totals) / total
+        
+        # Chi-square statistic
+        chi2 = ((contingency.values - expected) ** 2 / expected).sum()
+        
+        # Adjusted residuals
+        E = expected
+        O = contingency.values
+        row_props = row_totals / total
+        col_props = col_totals / total
+        
+        adj_residuals = pd.DataFrame(
+            (O - E) / np.sqrt(E * (1 - row_props) * (1 - col_props[:, np.newaxis].T)),
+            index=contingency.index,
+            columns=contingency.columns
+        )
+        
+        # Degrees of freedom
+        df = (contingency.shape[0] - 1) * (contingency.shape[1] - 1)
+        
+        # P-value
+        from scipy.stats import chi2
+        p_value = 1 - chi2.cdf(chi2, df)
+        
+        return chi2, adj_residuals, p_value
+    
+    def analyze_value_task_associations(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Analyze associations between values and tasks.
+        
+        Args:
+            df: DataFrame with 'value' and 'task' columns
+            
+        Returns:
+            DataFrame of adjusted residuals showing value-task associations
+        """
+        _, residuals, _ = self.compute_chi_square(df, 'value', 'task')
+        return residuals
+    
+    def analyze_value_response_associations(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Analyze associations between values and response types.
+        
+        Args:
+            df: DataFrame with 'value' and 'response_type' columns
+            
+        Returns:
+            DataFrame of adjusted residuals showing value-response associations
+        """
+        _, residuals, _ = self.compute_chi_square(df, 'value', 'response_type')
+        return residuals
+    
+    def identify_mirrored_values(self, 
+                                df: pd.DataFrame, 
+                                human_val_col: str = 'human_value', 
+                                ai_val_col: str = 'ai_value') -> pd.DataFrame:
+        """
+        Identify instances where AI mirrors human-expressed values.
+        
+        Args:
+            df: DataFrame with human and AI value columns
+            human_val_col: Column name for human values
+            ai_val_col: Column name for AI values
+            
+        Returns:
+            DataFrame with mirroring analysis
+        """
+        # Create a mirroring indicator
+        df['mirrored'] = df[human_val_col] == df[ai_val_col]
+        
+        # Calculate mirroring rates by value
+        mirroring_rates = df.groupby(human_val_col)['mirrored'].mean().reset_index()
+        mirroring_rates.columns = ['value', 'mirroring_rate']
+        
+        # Calculate mirroring counts
+        mirroring_counts = df.groupby(human_val_col)['mirrored'].sum().reset_index()
+        mirroring_counts.columns = ['value', 'mirroring_count']
+        
+        # Merge rates and counts
+        result = pd.merge(mirroring_rates, mirroring_counts, on='value')
+        
+        # Get total occurrences of each value
+        value_counts = df[human_val_col].value_counts().reset_index()
+        value_counts.columns = ['value', 'total_count']
+        
+        # Merge with result
+        result = pd.merge(result, value_counts, on='value')
+        
+        return result.sort_values('mirroring_rate', ascending=False)
+
+# Example usage
+if __name__ == "__main__":
+    analyzer = ValueAnalyzer()
+    
+    # Example value list
+    values = ["helpfulness", "transparency", "clarity", "helpfulness", 
+              "efficiency", "thoroughness", "helpfulness"]
+    
+    # Calculate frequencies
+    frequencies = analyzer.calculate_value_frequencies(values)
+    print("Value frequencies:")
+    for value, count in sorted(frequencies.items(), key=lambda x: x[1], reverse=True):
+        print(f"  {value}: {count}")
+#+END_SRC
+
+** Tools and Scripts
+
+*** Paper Downloader Script
+
+#+BEGIN_SRC bash :tangle tools/download/download_papers.sh :shebang "#!/bin/bash" :mkdirp yes
+# Create .cache directory if it doesn't exist
+mkdir -p .cache
+
+# Function to download a file with proper error handling
+download_file() {
+    local url="$1"
+    local filename="$2"
+    
+    echo "Downloading: $filename"
+    
+    # Try using curl first
+    if command -v curl &> /dev/null; then
+        curl -L "$url" -o ".cache/$filename" --retry 3 --silent --show-error
+        if [ $? -ne 0 ]; then
+            echo "Error downloading $filename with curl"
+            return 1
+        fi
+    # Fall back to wget if curl is not available
+    elif command -v wget &> /dev/null; then
+        wget -q "$url" -O ".cache/$filename"
+        if [ $? -ne 0 ]; then
+            echo "Error downloading $filename with wget"
+            return 1
+        fi
+    else
+        echo "Error: Neither curl nor wget is installed"
+        exit 1
+    fi
+    
+    echo "Successfully downloaded: $filename"
+    return 0
+}
+
+# List of papers to download
+papers=(
+    "https://assets.anthropic.com/m/18d20cca3cde3503/original/Values-in-the-Wild-Paper.pdf values-in-the-wild.pdf"
+    "https://www-cdn.anthropic.com/de8ba9b01c9ab7cbabf5c33b80b7bbc618857627/Model_Card_Claude_3.pdf claude-3-model-card.pdf"
+    "https://proceedings.neurips.cc/paper_files/paper/2023/file/a74b697bce4cac6c91896372abaa8863-Paper-Datasets_and_Benchmarks.pdf dices-dataset.pdf"
+    "https://proceedings.neurips.cc/paper_files/paper/2024/file/515c62809e0a29729d7eec26e2916fc0-Paper-Conference.pdf questioning-survey-responses-llm.pdf"
+    "https://arxiv.org/pdf/2212.08073 constitutional-ai-paper.pdf"
+    "https://openreview.net/pdf?id=zKDSfGhCoK personality-traits-llm.pdf"
+    "https://openreview.net/pdf?id=zl16jLb91v measuring-representation-opinions.pdf"
+    "https://mental.jmir.org/2024/1/e55988/PDF llm-alignment-human-values-mental-health.pdf"
+    "https://dl.acm.org/doi/pdf/10.1145/3630106.3658979 collective-constitutional-ai.pdf"
+    "https://arxiv.org/pdf/2110.07574 can-machines-learn-morality.pdf"
+    "https://proceedings.neurips.cc/paper_files/paper/2024/file/be2e1b68b44f2419e19f6c35a1b8cf35-Paper-Datasets_and_Benchmarks_Track.pdf prism-alignment-dataset.pdf"
+    "https://aclanthology.org/2024.knowllm-1.10.pdf beyond-probabilities-misalignment.pdf"
+    "https://aclanthology.org/2025.coling-main.567.pdf cultural-alignment-llm-hofstede.pdf"
+    "https://aclanthology.org/2024.findings-emnlp.891.pdf llm-consistency-value-questions.pdf"
+    "https://arxiv.org/pdf/2307.16180 llm-personality-mbti.pdf"
+    "https://aclanthology.org/2022.findings-acl.165.pdf bbq-bias-benchmark.pdf"
+    "https://journals.sagepub.com/doi/pdf/10.1177/17456916231214460 ai-psychometrics.pdf"
+)
+
+# Count successful and failed downloads
+success_count=0
+failed_count=0
+failed_files=""
+
+# Download each paper
+for paper in "${papers[@]}"; do
+    # Split the string into URL and filename
+    url=$(echo "$paper" | cut -d' ' -f1)
+    filename=$(echo "$paper" | cut -d' ' -f2)
+    
+    # Download the file
+    if download_file "$url" "$filename"; then
+        ((success_count++))
+    else
+        ((failed_count++))
+        failed_files="$failed_files$filename, "
+    fi
+done
+
+# Print summary
+echo ""
+echo "Download Summary:"
+echo "-----------------"
+echo "Successfully downloaded: $success_count files"
+echo "Failed downloads: $failed_count files"
+if [ $failed_count -gt 0 ]; then
+    echo "Failed files: ${failed_files%, }"
+fi
+
+# Check if any files were downloaded
+if [ $success_count -gt 0 ]; then
+    echo ""
+    echo "Downloaded files are in the .cache directory:"
+    ls -lh .cache/
+fi
+#+END_SRC
+
+*** Sample Data Generators
+
+#+BEGIN_SRC python :tangle tools/validation/generate_sample_data.py :shebang "#!/usr/bin/env python" :mkdirp yes
+"""
+Generates sample data files for testing and validation.
+"""
+import os
+import csv
+import json
+import random
+from datetime import datetime, timedelta
+
+def generate_values_csv():
+    """Generate a sample CSV with value data."""
+    
+    # Define sample values and their weights
+    values = [
+        ("helpfulness", 23.359),
+        ("professionalism", 22.861),
+        ("transparency", 17.391),
+        ("clarity", 16.58),
+        ("thoroughness", 14.301),
+        ("efficiency", 6.606),
+        ("technical excellence", 6.127),
+        ("authenticity", 6.042),
+        ("analytical rigor", 5.478),
+        ("accuracy", 5.318),
+        ("technical competence", 4.912),
+        ("adaptability", 4.811),
+        ("intellectual honesty", 4.806),
+        ("accessibility", 4.12),
+        ("pragmatism", 3.72),
+        ("precision", 3.537),
+        ("academic rigor", 3.357),
+        ("service orientation", 2.708),
+        ("responsibility", 2.707),
+        ("intellectual rigor", 2.658),
+        ("clear communication", 2.563),
+        ("technical precision", 2.475),
+        ("objectivity", 2.342),
+        ("user experience", 2.336),
+        ("empathy", 2.318),
+    ]
+    
+    # Ensure data directory exists
+    os.makedirs("data/values", exist_ok=True)
+    
+    # Generate example sentences for each value
+    with open("data/values/values_evals.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["value", "percentage", "example_sentence"])
+        
+        for value, percentage in values:
+            # Write multiple example sentences for each value
+            for i in range(3):
+                sentence = f"This is example sentence {i+1} demonstrating {value}."
+                writer.writerow([value, percentage, sentence])
+    
+    print(f"Generated: data/values/values_evals.csv")
+
+def generate_value_floors():
+    """Generate a sample CSV with value floor thresholds."""
+    
+    # Define sample values and their weights
+    values = [
+        ("helpfulness", 23.359),
+        ("professionalism", 22.861),
+        ("transparency", 17.391),
+        ("clarity", 16.58),
+        ("thoroughness", 14.301),
+        ("efficiency", 6.606),
+        ("technical excellence", 6.127),
+        ("authenticity", 6.042),
+        ("analytical rigor", 5.478),
+        ("accuracy", 5.318),
+    ]
+    
+    # Calculate floors
+    floors = []
+    cumulative = 0.0
+    
+    for value, percentage in values:
+        lower_bound = cumulative
+        cumulative += percentage
+        floors.append((value, lower_bound, cumulative))
+    
+    # Write floors to CSV
+    with open("data/values/value_floors.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["value", "lower_bound", "upper_bound"])
+        
+        for value, lower, upper in floors:
+            writer.writerow([value, f"{lower:.3f}", f"{upper:.3f}"])
+    
+    print(f"Generated: data/values/value_floors.csv")
+
+def generate_sample_conversations():
+    """Generate sample conversation data."""
+    
+    # Sample values
+    values = [
+        "helpfulness", "professionalism", "transparency", "clarity", 
+        "thoroughness", "efficiency", "analytical rigor", "accuracy"
+    ]
+    
+    # Sample tasks
+    tasks = [
+        "General question answering",
+        "Creative writing assistance",
+        "Technical troubleshooting",
+        "Personal advice",
+        "Research assistance"
+    ]
+    
+    # Generate sample conversations
+    conversations = []
+    
+    for i in range(20):
+        messages = []
+        message_count = random.randint(2, 8)
+        task = random.choice(tasks)
+        
+        for j in range(message_count):
+            timestamp = datetime.now() - timedelta(minutes=j*5)
+            if j % 2 == 0:
+                # User message
+                messages.append({
+                    "id": i*100 + j,
+                    "role": "user",
+                    "content": f"This is user message {j} in conversation {i}.",
+                    "timestamp": timestamp.isoformat()
+                })
+            else:
+                # Assistant message
+                sampled_values = random.sample(values, k=min(3, random.randint(1, 3)))
+                messages.append({
+                    "id": i*100 + j,
+                    "role": "assistant",
+                    "content": f"This is assistant message {j} in conversation {i}.",
+                    "timestamp": timestamp.isoformat(),
+                    "extracted_values": sampled_values
+                })
+        
+        conversations.append({
+            "id": i,
+            "task": task,
+            "messages": messages
+        })
+    
+    # Ensure data directory exists
+    os.makedirs("data/samples", exist_ok=True)
+    
+    # Write conversations to JSON
+    with open("data/samples/sample_conversations.json", "w") as f:
+        json.dump(conversations, f, indent=2)
+    
+    print(f"Generated: data/samples/sample_conversations.json")
+
+def generate_anonymized_data():
+    """Generate sample anonymized dataset."""
+    
+    # Sample values and their frequencies
+    value_frequencies = {
+        "helpfulness": 245,
+        "professionalism": 233,
+        "transparency": 187,
+        "clarity": 175,
+        "thoroughness": 143,
+        "efficiency": 68,
+        "authenticity": 58,
+        "analytical rigor": 49,
+        "accuracy": 44,
+        "intellectual honesty": 38
+    }
+    
+    # Generate anonymized users
+    anonymized_users = []
+    
+    for i in range(10):
+        anonymized_users.append({
+            "anonymized_id": f"User{random.randint(100, 999)}",
+            "generalized_demographics": {
+                "age_range": random.choice(["18-24", "25-34", "35-44", "45-54"]),
+                "region": random.choice(["Northeast", "West", "Midwest", "South"])
+            },
+            "chat_count": random.randint(1, 8),
+            "value_count": random.randint(1, 5)
+        })
+    
+    # Generate anonymized messages
+    anonymized_messages = []
+    
+    for i in range(50):
+        sampled_values = random.sample(list(value_frequencies.keys()), k=random.randint(1, 3))
+        
+        anonymized_messages.append({
+            "anonymized_id": f"msg-{random.randint(1000, 9999)}",
+            "chat_id": f"chat-{random.randint(100, 999)}",
+            "sender": f"User{random.randint(100, 999)}",
+            "length": random.randint(10, 200),
+            "timestamp": random.choice(["Monday, morning", "Tuesday, afternoon", "Friday, evening"]),
+            "extracted_values": sampled_values
+        })
+    
+    # Create the complete dataset
+    dataset = {
+        "metadata": {
+            "user_count": len(anonymized_users),
+            "chat_count": 30,
+            "message_count": len(anonymized_messages),
+            "date_range": {
+                "start": "Monday, morning",
+                "end": "Friday, evening",
+            }
+        },
+        "value_frequencies": value_frequencies,
+        "anonymized_users": anonymized_users,
+        "anonymized_messages": anonymized_messages
+    }
+    
+    # Write dataset to JSON
+    with open("data/samples/anonymized_dataset.json", "w") as f:
+        json.dump(dataset, f, indent=2)
+    
+    print(f"Generated: data/samples/anonymized_dataset.json")
+
+if __name__ == "__main__":
+    print("Generating sample data files...")
+    generate_values_csv()
+    generate_value_floors()
+    generate_sample_conversations()
+    generate_anonymized_data()
+    print("Sample data generation complete.")
+#+END_SRC
+
+** Documentation
+
+#+BEGIN_SRC markdown :tangle docs/tutorials/getting_started.md :mkdirp yes
+# Getting Started with Value Alignment Toolkit
+
+This tutorial will guide you through setting up and using the Value Alignment Toolkit for analyzing and simulating value expressions in AI systems.
+
+## Prerequisites
+
+- Python 3.8+
+- pip or conda
+- Optional: Guile 3.0+ (for advanced simulation features)
+
+## Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/aygp-dr/value-alignment-toolkit.git
+   cd value-alignment-toolkit
+   ```
+
+2. Set up a virtual environment:
+   ```bash
+   # Create the virtual environment
+   python -m venv venv
+   
+   # Activate the environment (Linux/macOS)
+   source venv/bin/activate
+   
+   # Activate the environment (Windows)
+   venv\Scripts\activate
+   ```
+
+3. Install dependencies:
+   ```bash
+   # Install Python dependencies
+   pip install -r requirements.txt
+   ```
+
+## Basic Usage
+
+### 1. Downloading Research Papers
+
+The toolkit includes a script to download relevant research papers:
+
+```bash
+# Run the downloader script
+bash tools/download/download_papers.sh
+```
+
+This will download papers to the `.cache` directory.
+
+### 2. Running a Chat Simulation
+
+To run a basic chat simulation:
+
+```python
+from src.simulation.chat_simulator import ChatSimulator
+
+# Create and run a simulation
+simulator = ChatSimulator()
+results = simulator.run_simulation(num_users=10, chats_per_user=5, messages_per_chat=10)
+
+print(f"Simulation complete with {results['summary']['message_count']} messages")
+```
+
+### 3. Extracting Values
+
+To extract values from conversation data:
+
+```python
+from src.extraction.extractor import ValueExtractor
+
+# Create a value extractor
+extractor = ValueExtractor()
+
+# Extract values from a text
+sample_text = "I'm here to help you understand this concept with clarity and transparency."
+values = extractor.extract_from_text(sample_text)
+
+print(f"Extracted values: {values}")
+```
+
+### 4. Anonymizing Data
+
+To anonymize data for privacy-preserving analysis:
+
+```python
+from src.anonymization.anonymizer import Anonymizer
+from datetime import datetime
+
+# Create an anonymizer
+anonymizer = Anonymizer()
+
+# Anonymize a sample user
+user_data = {
+    "id": 123,
+    "username": "johndoe",
+    "demographics": {
+        "age": 34,
+        "location": "San Francisco"
+    },
+    "chats": [1, 2, 3],
+    "values": ["privacy", "honesty"]
+}
+
+anon_user = anonymizer.anonymize_user(user_data)
+print(f"Anonymized user: {anon_user}")
+```
+
+## Next Steps
+
+- Explore the [documentation](../README.md) for more details on each module
+- Check out the [examples](../data/samples) for sample data and usage patterns
+- Read about the [research foundation](../docs/paper/summary.md) behind the toolkit
+
+For more detailed tutorials, see the [tutorials directory](../docs/tutorials).
+#+END_SRC
+
+#+BEGIN_SRC markdown :tangle docs/paper/summary.md :mkdirp yes
+# Values in the Wild: Research Summary
+
+This document summarizes the key findings and methodologies from the "Values in the Wild" paper by Anthropic, which serves as the foundation for this toolkit.
+
+## Overview
+
+The "Values in the Wild" paper presents a novel empirical approach to understanding how values manifest in AI assistant interactions. The research analyzes hundreds of thousands of real-world Claude conversations to extract and categorize AI values across different contexts.
+
+## Key Findings
+
+1. **Value Taxonomy**: The research identified 3,307 unique AI values, organized into a hierarchical taxonomy with five top-level categories:
+   - Practical Values (31.4%)
+   - Epistemic Values (22.2%)
+   - Social Values (21.4%) 
+   - Protective Values (13.9%)
+   - Personal Values (11.1%)
+
+2. **Common Values**: The most frequently expressed AI values were service-oriented:
+   - Helpfulness (23.4%)
+   - Professionalism (22.9%)
+   - Transparency (17.4%)
+   - Clarity (16.6%)
+   - Thoroughness (14.3%)
+
+3. **Context Dependence**: AI values vary significantly by task context:
+   - "Healthy boundaries" in relationship advice
+   - "Historical accuracy" for controversial historical events
+   - "Human agency" in technology ethics discussions
+
+4. **Human-AI Value Relationships**: AI values relate to human-expressed values in complex ways:
+   - Often mirroring positive values (e.g., "authenticity")
+   - Countering problematic values with opposing values (e.g., "ethical integrity")
+
+5. **Response Types**: Claude's responses to human values vary:
+   - Predominantly supportive (43% of conversations)
+   - Reframing when appropriate (6.6%)
+   - Rarely resistant (5.4%)
+
+## Methodology
+
+The research employed a privacy-preserving approach to analyze AI conversations:
+
+1. **Data Collection**: Random sample of anonymized Claude.ai conversations, filtered for subjective interactions (44% of total)
+
+2. **Feature Extraction**: Used language models to extract:
+   - AI values
+   - Human values
+   - Response types
+   - Task categories
+
+3. **Taxonomy Construction**: Hierarchically organized values into a four-level taxonomy
+
+4. **Statistical Analysis**: Applied chi-square analysis to identify significant associations between values and contexts
+
+5. **Privacy Protection**: Implemented anonymization techniques including:
+   - Pseudonymization
+   - Context-specific identifiers
+   - Demographic generalization
+   - K-anonymity
+
+## Implications
+
+This research provides a foundation for:
+
+1. **Empirical Evaluation**: Evidence-based assessment of AI value alignment
+2. **AI-Native Value Frameworks**: Understanding values as they manifest in AI systems
+3. **Transparency**: Visibility into how AI systems behave in real-world contexts
+4. **Design Insights**: Guidance for developing more aligned AI systems
+
+## References
+
+Full paper: [Values in the Wild: Discovering and Analyzing Values in Real-World Language Model Interactions](https://huggingface.co/datasets/Anthropic/values-in-the-wild)
+#+END_SRC
+
+** Tests
+
+#+BEGIN_SRC python :tangle tests/test_extractor.py :mkdirp yes
+"""
+Unit tests for the value extractor module.
+"""
+import unittest
+from src.extraction.extractor import ValueExtractor
+
+class TestValueExtractor(unittest.TestCase):
+    """Test suite for ValueExtractor class."""
+    
+    def setUp(self):
+        """Set up test fixtures."""
+        self.extractor = ValueExtractor()
+    
+    def test_extract_from_text(self):
+        """Test basic value extraction from text."""
+        text = "I'm committed to helping you with clarity and transparency."
+        values = self.extractor.extract_from_text(text)
+        
+        # Check that some values were extracted
+        self.assertTrue(len(values) > 0)
+        
+        # Check for specific expected values
+        extracted_values = [v["value"] for v in values]
+        self.assertIn("helpfulness", extracted_values)
+        self.assertIn("transparency", extracted_values)
+    
+    def test_extract_from_conversation(self):
+        """Test extracting values from a conversation transcript."""
+        messages = [
+            {"role": "user", "content": "Can you help me understand this concept?"},
+            {"role": "assistant", "content": "I'll help you understand with clarity and thoroughness."},
+            {"role": "user", "content": "Thanks, that's clear now."},
+            {"role": "assistant", "content": "I'm glad I could help. Let me know if you need anything else."}
+        ]
+        
+        values = self.extractor.extract_from_conversation(messages)
+        
+        # Check that values were extracted from both assistant messages
+        self.assertTrue(len(values) >= 2)
+        
+        # Check for message indices
+        for value in values:
+            self.assertTrue("message_index" in value)
+            self.assertTrue(value["message_index"] in [1, 3])  # Assistant message indices
+
+if __name__ == "__main__":
+    unittest.main()
+
+#+END_SRC
+
+#+BEGIN_SRC python :tangle tests/test_simulator.py :mkdirp yes
+"""
+Unit tests for the chat simulator module.
+"""
+import unittest
+from src.simulation.chat_simulator import ChatSimulator, User, Chat, Message
+
+class TestChatSimulator(unittest.TestCase):
+    """Test suite for ChatSimulator class."""
+    
+    def setUp(self):
+        """Set up test fixtures."""
+        self.simulator = ChatSimulator()
+    
+    def test_create_users(self):
+        """Test user creation."""
+        num_users = 5
+        users = self.simulator.create_users(num_users)
+        
+        # Check number of users
+        self.assertEqual(len(users), num_users)
+        self.assertEqual(len(self.simulator.users), num_users)
+        
+        # Check user properties
+        for user in users:
+            self.assertIsInstance(user, User)
+            self.assertTrue(hasattr(user, 'id'))
+            self.assertTrue(hasattr(user, 'username'))
+            self.assertTrue(hasattr(user, 'demographics'))
+            self.assertTrue(hasattr(user, 'chats'))
+    
+    def test_create_chats(self):
+        """Test chat creation."""
+        # Create users first
+        self.simulator.create_users(5)
+        
+        # Create chats
+        chats_per_user = 3
+        chats = self.simulator.create_chats(chats_per_user)
+        
+        # Check that chats were created
+        self.assertGreater(len(chats), 0)
+        self.assertEqual(len(self.simulator.chats), len(chats))
+        
+        # Check chat properties
+        for chat in chats.values():
+            self.assertIsInstance(chat, Chat)
+            self.assertTrue(hasattr(chat, 'id'))
+            self.assertTrue(hasattr(chat, 'name'))
+            self.assertTrue(hasattr(chat, 'participants'))
+            
+            # Check that chat has participants
+            self.assertGreater(len(chat.participants), 0)
+    
+    def test_generate_messages(self):
+        """Test message generation."""
+        # Set up users and chats
+        self.simulator.create_users(3)
+        self.simulator.create_chats(2)
+        
+        # Generate messages
+        messages_per_chat = 4
+        messages = self.simulator.generate_messages(messages_per_chat)
+        
+        # Check that messages were created
+        self.assertGreater(len(messages), 0)
+        
+        # Check message properties
+        for message in messages:
+            self.assertIsInstance(message, Message)
+            self.assertTrue(hasattr(message, 'id'))
+            self.assertTrue(hasattr(message, 'chat_id'))
+            self.assertTrue(hasattr(message, 'sender_id'))
+            self.assertTrue(hasattr(message, 'content'))
+            self.assertTrue(hasattr(message, 'timestamp'))
+    
+    def test_run_simulation(self):
+        """Test complete simulation run."""
+        # Run a small simulation
+        results = self.simulator.run_simulation(num_users=2, chats_per_user=2, messages_per_chat=3)
+        
+        # Check results structure
+        self.assertIn('summary', results)
+        self.assertIn('user_count', results['summary'])
+        self.assertIn('chat_count', results['summary'])
+        self.assertIn('message_count', results['summary'])
+        
+        # Check counts
+        self.assertEqual(results['summary']['user_count'], 2)
+        self.assertGreaterEqual(results['summary']['chat_count'], 2)
+        self.assertGreaterEqual(results['summary']['message_count'], 6)  # At least 2 chats * 3 messages
+
+if __name__ == "__main__":
+    unittest.main()
+#+END_SRC
+
+#+BEGIN_SRC python :tangle tests/test_analyzer.py :mkdirp yes
+"""
+Unit tests for the value analyzer module.
+"""
+import unittest
+import pandas as pd
+import numpy as np
+from src.analysis.value_analyzer import ValueAnalyzer
+
+class TestValueAnalyzer(unittest.TestCase):
+    """Test suite for ValueAnalyzer class."""
+    
+    def setUp(self):
+        """Set up test fixtures."""
+        self.analyzer = ValueAnalyzer()
+        
+        # Create sample data
+        self.values_list = [
+            "helpfulness", "transparency", "clarity", "helpfulness", 
+            "efficiency", "thoroughness", "helpfulness"
+        ]
+        
+        # Sample DataFrame for analysis
+        self.sample_df = pd.DataFrame({
+            'value': ["helpfulness", "transparency", "clarity", "helpfulness", 
+                     "efficiency", "thoroughness", "helpfulness"],
+            'task': ["advice", "technical", "education", "advice", 
+                    "coding", "research", "advice"],
+            'response_type': ["support", "support", "neutral", "support", 
+                            "support", "neutral", "reframing"],
+            'human_value': ["assistance", "transparency", "clarity", "efficiency", 
+                          "efficiency", "thoroughness", "self-improvement"]
+        })
+    
+    def test_calculate_value_frequencies(self):
+        """Test value frequency calculation."""
+        frequencies = self.analyzer.calculate_value_frequencies(self.values_list)
+        
+        # Check total count
+        self.assertEqual(sum(frequencies.values()), len(self.values_list))
+        
+        # Check specific frequencies
+        self.assertEqual(frequencies["helpfulness"], 3)
+        self.assertEqual(frequencies["transparency"], 1)
+        self.assertEqual(frequencies["clarity"], 1)
+        self.assertEqual(frequencies["efficiency"], 1)
+        self.assertEqual(frequencies["thoroughness"], 1)
+    
+    def test_compute_chi_square(self):
+        """Test chi-square computation."""
+        # Set the analyzer's data
+        self.analyzer.values_data = self.sample_df
+        
+        # Compute chi-square for value and task
+        chi2, residuals, p_value = self.analyzer.compute_chi_square(
+            self.sample_df, 'value', 'task')
+        
+        # Check result types
+        self.assertIsInstance(chi2, float)
+        self.assertIsInstance(residuals, pd.DataFrame)
+        self.assertIsInstance(p_value, float)
+        
+        # Check residuals shape
+        self.assertEqual(residuals.shape[0], len(self.sample_df['value'].unique()))
+        self.assertEqual(residuals.shape[1], len(self.sample_df['task'].unique()))
+    
+    def test_analyze_value_task_associations(self):
+        """Test value-task association analysis."""
+        residuals = self.analyzer.analyze_value_task_associations(self.sample_df)
+        
+        # Check result type and shape
+        self.assertIsInstance(residuals, pd.DataFrame)
+        self.assertEqual(residuals.shape[0], len(self.sample_df['value'].unique()))
+        self.assertEqual(residuals.shape[1], len(self.sample_df['task'].unique()))
+        
+        # Check that helpfulness has a positive association with advice
+        self.assertGreater(residuals.loc["helpfulness", "advice"], 0)
+    
+    def test_identify_mirrored_values(self):
+        """Test mirrored values identification."""
+        # Create a sample with mirrored values
+        mirror_df = pd.DataFrame({
+            'human_value': ["clarity", "efficiency", "thoroughness", "helpfulness", "transparency"],
+            'ai_value': ["clarity", "efficiency", "analytical rigor", "helpfulness", "honesty"]
+        })
+        
+        result = self.analyzer.identify_mirrored_values(mirror_df)
+        
+        # Check result structure
+        self.assertIn('value', result.columns)
+        self.assertIn('mirroring_rate', result.columns)
+        self.assertIn('mirroring_count', result.columns)
+        self.assertIn('total_count', result.columns)
+        
+        # Check mirroring rates
+        clarity_row = result[result['value'] == "clarity"].iloc[0]
+        self.assertEqual(clarity_row['mirroring_rate'], 1.0)  # 100% mirrored
+        
+        efficiency_row = result[result['value'] == "efficiency"].iloc[0]
+        self.assertEqual(efficiency_row['mirroring_rate'], 1.0)  # 100% mirrored
+        
+        thoroughness_row = result[result['value'] == "thoroughness"].iloc[0]
+        self.assertEqual(thoroughness_row['mirroring_rate'], 0.0)  # 0% mirrored
+
+if __name__ == "__main__":
+    unittest.main()
+#+END_SRC
+
+** Main Configuration Files
+
+*** Main Package Configuration
+
+#+BEGIN_SRC python :tangle src/__init__.py :mkdirp yes
+"""
+Value Alignment Toolkit main package.
+
+A comprehensive framework for implementing, analyzing, and validating AI value alignment
+based on Anthropic's "Values in the Wild" paper.
+"""
+
+__version__ = "0.1.0"
+__author__ = "Aidan Pace <apace@defrecord.com>"
+#+END_SRC
+
+*** Setup Configuration
+
+#+BEGIN_SRC python :tangle setup.py :mkdirp yes
+#!/usr/bin/env python
+"""
+Setup script for Value Alignment Toolkit.
+"""
+from setuptools import setup, find_packages
+
+with open("README.org", "r") as fh:
+    long_description = fh.read()
+
+setup(
+    name="value_alignment_toolkit",
+    version="0.1.0",
+    author="Aidan Pace",
+    author_email="apace@defrecord.com",
+    description="Tools for implementing, analyzing, and validating AI value alignment",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/aygp-dr/value-alignment-toolkit",
+    packages=find_packages(),
+    classifiers=[
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+    ],
+    python_requires=">=3.8",
+    install_requires=[
+        "numpy>=1.24.0",
+        "pandas>=2.0.0",
+        "scikit-learn>=1.2.0",
+        "matplotlib>=3.7.0",
+        "seaborn>=0.12.0",
+        "transformers>=4.30.0",
+        "sentence-transformers>=2.2.2",
+    ],
+)
+#+END_SRC
+
+*** Makefile
+
+#+BEGIN_SRC makefile :tangle Makefile :mkdirp yes
+# Makefile for Value Alignment Toolkit
+
+.PHONY: all setup test clean docs lint format
+
+# Default target
+all: setup test
+
+# Setup development environment
+setup:
+	@echo "Setting up development environment..."
+	python -m venv venv
+	. venv/bin/activate && pip install -r requirements.txt
+	@echo "Setup complete. Activate with: source venv/bin/activate"
+
+# Run tests
+test:
+	@echo "Running tests..."
+	python -m pytest tests/
+
+# Run tests with coverage
+coverage:
+	@echo "Running tests with coverage..."
+	python -m pytest --cov=src tests/
+	python -m pytest --cov=src --cov-report=html tests/
+
+# Clean build artifacts
+clean:
+	@echo "Cleaning build artifacts..."
+	rm -rf build/
+	rm -rf dist/
+	rm -rf *.egg-info/
+	rm -rf .pytest_cache/
+	rm -rf .coverage
+	rm -rf htmlcov/
+	rm -rf __pycache__/
+	find . -name "__pycache__" -type d -exec rm -rf {} +
+	find . -name "*.pyc" -delete
+	find . -name "*.pyo" -delete
+	find . -name "*.pyd" -delete
+
+# Generate documentation
+docs:
+	@echo "Generating documentation..."
+	mkdir -p docs/api
+	pdoc --html --output-dir docs/api src/
+
+# Lint code
+lint:
+	@echo "Linting code..."
+	flake8 src/ tests/
+	mypy src/
+
+# Format code
+format:
+	@echo "Formatting code..."
+	black src/ tests/
+
+# Download research papers
+download-papers:
+	@echo "Downloading research papers..."
+	bash tools/download/download_papers.sh
+
+# Generate sample data
+generate-samples:
+	@echo "Generating sample data..."
+	python tools/validation/generate_sample_data.py
+
+# Run simulation
+simulate:
+	@echo "Running simulation..."
+	python -c "from src.simulation.chat_simulator import ChatSimulator; simulator = ChatSimulator(); results = simulator.run_simulation(); print(f\"Simulation complete with {results['summary']['message_count']} messages\")"
+
+# Help
+help:
+	@echo "Available targets:"
+	@echo "  all              : Setup environment and run tests"
+	@echo "  setup            : Set up development environment"
+	@echo "  test             : Run tests"
+	@echo "  coverage         : Run tests with coverage reporting"
+	@echo "  clean            : Clean build artifacts"
+	@echo "  docs             : Generate documentation"
+	@echo "  lint             : Lint code"
+	@echo "  format           : Format code"
+	@echo "  download-papers  : Download research papers"
+	@echo "  generate-samples : Generate sample data files"
+	@echo "  simulate         : Run a simple simulation"
+	@echo "  help             : Show this help message"
+#+END_SRC
+
+*** Git Configuration
+
+#+BEGIN_SRC text :tangle .gitignore :mkdirp yes
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Unit tests / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Project specific
+.cache/
+data/samples/
+.env
+
+# Logs
+logs/
+*.log
+
+#+END_SRC
+
+#+BEGIN_SRC python :tangle tests/test_anonymizer.py :mkdirp yes
+"""
+Unit tests for the anonymization module.
+"""
+import unittest
+from datetime import datetime
+from src.anonymization.anonymizer import Anonymizer
+
+class TestAnonymizer(unittest.TestCase):
+    """Test suite for Anonymizer class."""
+    
+    def setUp(self):
+        """Set up test fixtures."""
+        self.anonymizer = Anonymizer(salt="test_salt")
+        
+        # Sample user data
+        self.user_data = {
+            "id": 123,
+            "username": "johndoe",
+            "demographics": {
+                "age": 34,
+                "location": "San Francisco"
+            },
+            "chats": [1, 2, 3],
+            "values": ["privacy", "honesty"]
+        }
+        
+        # Sample message data
+        self.message_data = {
+            "id": 456,
+            "chat_id": 2,
+            "sender_id": 123,
+            "content": "I think privacy is really important.",
+            "timestamp": datetime.now(),
+            "extracted_values": ["privacy", "honesty"]
+        }
+    
+    def test_get_pseudonym(self):
+        """Test pseudonym generation."""
+        # Test basic pseudonym generation
+        pseudonym1 = self.anonymizer.get_pseudonym("123")
+        self.assertTrue(pseudonym1.startswith("User"))
+        self.assertTrue(len(pseudonym1) > 4)  # "User" + at least one digit
+        
+        # Test consistency
+        pseudonym2 = self.anonymizer.get_pseudonym("123")
+        self.assertEqual(pseudonym1, pseudonym2)
+        
+        # Test context-specific pseudonyms
+        context_pseudonym1 = self.anonymizer.get_pseudonym("123", "chat1")
+        context_pseudonym2 = self.anonymizer.get_pseudonym("123", "chat2")
+        self.assertNotEqual(context_pseudonym1, context_pseudonym2)
+    
+    def test_anonymize_user(self):
+        """Test user anonymization."""
+        anon_user = self.anonymizer.anonymize_user(self.user_data)
+        
+        # Check structure
+        self.assertIn("anonymized_id", anon_user)
+        self.assertIn("generalized_demographics", anon_user)
+        self.assertIn("age_range", anon_user["generalized_demographics"])
+        
+        # Check demographic generalization
+        self.assertEqual(anon_user["generalized_demographics"]["age_range"], "25-34")
+        self.assertEqual(anon_user["generalized_demographics"]["region"], "West")
+        
+        # Check that sensitive information is removed
+        self.assertNotIn("username", anon_user)
+        self.assertNotIn("password", anon_user)
+    
+    def test_anonymize_message(self):
+        """Test message anonymization."""
+        anon_message = self.anonymizer.anonymize_message(self.message_data)
+        
+        # Check structure
+        self.assertIn("anonymized_id", anon_message)
+        self.assertIn("sender", anon_message)
+        self.assertIn("length", anon_message)
+        self.assertIn("timestamp", anon_message)
+        
+        # Check content anonymization
+        self.assertEqual(anon_message["length"], len(self.message_data["content"]))
+        self.assertNotIn("content", anon_message)
+        
+        # Check that values are preserved
+        self.assertEqual(anon_message["extracted_values"], self.message_data["extracted_values"])
+    
+    def test_generalize_age(self):
+        """Test age generalization."""
+        self.assertEqual(self.anonymizer.generalize_age(17), "under-18")
+        self.assertEqual(self.anonymizer.generalize_age(22), "18-24")
+        self.assertEqual(self.anonymizer.generalize_age(30), "25-34")
+        self.assertEqual(self.anonymizer.generalize_age(40), "35-44")
+        self.assertEqual(self.anonymizer.generalize_age(50), "45-54")
+        self.assertEqual(self.anonymizer.generalize_age(60), "55-64")
+        self.assertEqual(self.anonymizer.generalize_age(70), "65+")
+        self.assertEqual(self.anonymizer.generalize_age(None), "unknown")
+    
+    def test_generalize_timestamp(self):
+        """Test timestamp generalization."""
+        # Monday morning
+        dt = datetime(2023, 1, 2, 10, 0, 0)  # Monday, 10 AM
+        self.assertEqual(self.anonymizer.generalize_timestamp(dt), "Monday, morning")
+        
+        # Tuesday afternoon
+        dt = datetime(2023, 1, 3, 14, 0, 0)  # Tuesday, 2 PM
+        self.assertEqual(self.anonymizer.generalize_timestamp(dt), "Tuesday, afternoon")
+        
+        # Friday evening
+        dt = datetime(2023, 1, 6, 19, 0, 0)  # Friday, 7 PM
+        self.assertEqual(self.anonymizer.generalize_timestamp(dt), "Friday, evening")
+        
+        # Saturday night
+        dt = datetime(2023, 1, 7, 23, 0, 0)  # Saturday, 11 PM
+        self.assertEqual(self.anonymizer.generalize_timestamp(dt), "Saturday, night")
+
+if __name__ == "__main__":
+    unittest.main()
+#+END_SRC
+

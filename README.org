@@ -1,0 +1,84 @@
+#+TITLE: Values in the Wild: Implementation and Analysis Framework
+#+AUTHOR: Aidan Pace <apace@defrecord.com>
+#+EMAIL: apace@defrecord.com
+#+DATE: [2025-04-30 Wed]
+
+* Values in the Wild: Implementation and Analysis Framework
+
+** Overview
+This repository provides tools for implementing, analyzing, and validating AI value alignment based on Anthropic's "Values in the Wild" paper. It offers a comprehensive toolkit for simulating, anonymizing, and analyzing value expressions in AI assistant interactions.
+
+The framework enables researchers and engineers to:
+- Extract and analyze value expressions from AI conversations
+- Implement privacy-preserving anonymization techniques
+- Simulate chat interactions with weighted value sampling
+- Visualize and evaluate value distributions across different contexts
+- Compare alignment between human and AI expressed values
+
+** Research Foundation
+This implementation is based on the methodology presented in Anthropic's "Values in the Wild" paper, which analyzes how values manifest in real-world AI assistant interactions. The paper provides a taxonomy of over 3,000 AI values organized into a hierarchical structure with five top-level categories: Practical, Epistemic, Social, Protective, and Personal values.
+
+The research demonstrates that AI values are often context-dependent, varying by task type and human-expressed values. This repository provides tools to study these relationships and evaluate alignment across different scenarios.
+
+** Components
+
+*** Value Extraction and Taxonomy
+- Implementation of value extraction algorithms
+- Hierarchical taxonomy representation of AI values
+- Context-dependent analysis of value expressions
+
+*** Chat Simulation System
+- Weighted value sampling based on empirical distributions
+- Multi-user, multi-chat simulation environment
+- Configurable interaction patterns
+
+*** Privacy-Preserving Anonymization
+- Pseudonymization techniques for user identifiers 
+- Context-specific identity protection
+- K-anonymity implementation for demographic data
+- Differential privacy mechanisms
+
+*** Analysis and Visualization
+- Value frequency distribution analysis
+- Task-specific value association metrics
+- Human-AI value alignment measurements
+- Chi-square analysis tools for value-context relationships
+
+*** Reference Datasets
+- Value frequency distributions from research
+- Sample anonymized conversation datasets
+- Value taxonomy structure
+
+** Repository Structure
+The repository is organized as follows:
+
+- =src/=: Core implementation modules
+  - =extraction/=: Value extraction algorithms
+  - =simulation/=: Chat system simulation
+  - =anonymization/=: Privacy-preserving techniques
+  - =analysis/=: Statistical tools and visualizations
+  - =taxonomy/=: Value hierarchy implementation
+
+- =data/=: Datasets and reference materials
+  - =values/=: Value taxonomies and frequencies
+  - =samples/=: Example conversations and simulations
+
+- =tools/=: Utility scripts and helper applications
+  - =download/=: Paper and reference downloaders
+  - =validation/=: Testing and validation tools
+
+- =docs/=: Documentation and examples
+  - =tutorials/=: Usage guides and examples
+  - =paper/=: Research paper summaries
+
+** Getting Started
+See SETUP.org for detailed installation and configuration instructions.
+
+** Contributing
+Contributions are welcome! Please see CONTRIBUTING.org for guidelines.
+
+** License
+[Appropriate license information]
+
+** Acknowledgments
+This work builds upon research by Anthropic's "Values in the Wild" paper authored by Saffron Huang, Esin Durmus, et al.
