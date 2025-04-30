@@ -1,5 +1,6 @@
 # Makefile for Value Alignment Toolkit
-.PHONY: all setup test clean docs lint format download-papers download-data
+
+.PHONY: all setup test clean docs lint format
 
 # Default target
 all: setup test
@@ -31,7 +32,7 @@ clean:
 	rm -rf .pytest_cache/
 	rm -rf .coverage
 	rm -rf htmlcov/
-	rm -rf **pycache**/
+	rm -rf __pycache__/
 	find . -name "__pycache__" -type d -exec rm -rf {} +
 	find . -name "*.pyc" -delete
 	find . -name "*.pyo" -delete
@@ -57,16 +58,7 @@ format:
 # Download research papers
 download-papers:
 	@echo "Downloading research papers..."
-	bash scripts/download_papers.sh
-
-# Download Values in the Wild dataset
-download-data:
-	@echo "Downloading Values in the Wild dataset..."
-	bash scripts/download_hf_vitw.sh
-
-# Download all resources (papers and datasets)
-download-all: download-papers download-data
-	@echo "All downloads complete."
+	bash tools/download/download_papers.sh
 
 # Generate sample data
 generate-samples:
@@ -89,9 +81,7 @@ help:
 	@echo "  docs             : Generate documentation"
 	@echo "  lint             : Lint code"
 	@echo "  format           : Format code"
-	@echo "  download-papers  : Download research papers to .cache/"
-	@echo "  download-data    : Download Values in the Wild dataset to data/"
-	@echo "  download-all     : Download both papers and dataset"
+	@echo "  download-papers  : Download research papers"
 	@echo "  generate-samples : Generate sample data files"
 	@echo "  simulate         : Run a simple simulation"
 	@echo "  help             : Show this help message"
